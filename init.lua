@@ -76,6 +76,10 @@ require('lazy').setup({
   -- Detect tabstop and shiftwidth automatically
   'tpope/vim-sleuth',
 
+  -- Github copilot
+  'nvim-neotest/nvim-nio',
+  'github/copilot.vim',
+
   -- NOTE: This is where your plugins related to LSP can be installed.
   --  The configuration is done below. Search for lspconfig to find it below.
   {
@@ -88,11 +92,30 @@ require('lazy').setup({
 
       -- Useful status updates for LSP
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-      { 'j-hui/fidget.nvim', opts = {} },
+      { 'j-hui/fidget.nvim',       opts = {} },
 
       -- Additional lua configuration, makes nvim stuff amazing!
       'folke/neodev.nvim',
     },
+    -- config = function()
+    --   local capabilities = vim.lsp.protocol.make_client_capabilities()
+    --   capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
+    --
+    --   require('mason').setup()
+    --   local mason_lspconfig = require 'mason-lspconfig'
+    --   mason_lspconfig.setup {
+    --     ensure_installed = { "pyright" }
+    --   }
+    --   require("lspconfig").pyright.setup {
+    --     settings = {
+    --       python = {
+    --         analysis = {
+    --           typeCheckingMode = "off"
+    --         }
+    --       }
+    --     }
+    --   }
+    -- end
   },
 
   {
@@ -122,9 +145,66 @@ require('lazy').setup({
       'rafamadriz/friendly-snippets',
     },
   },
-
+  -- {
+  --   "hrsh7th/nvim-cmp",
+  --   dependencies = {
+  --     "hrsh7th/cmp-nvim-lsp",
+  --     "L3MON4D3/LuaSnip",
+  --     "saadparwaiz1/cmp_luasnip"
+  --   },
+  --   config = function()
+  --     local has_words_before = function()
+  --       unpack = unpack or table.unpack
+  --       local line, col = unpack(vim.api.nvim_win_get_cursor(0))
+  --       return col ~= 0 and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match("%s") == nil
+  --     end
+  --
+  --     local cmp = require('cmp')
+  --     local luasnip = require('luasnip')
+  --
+  --     cmp.setup({
+  --       snippet = {
+  --         expand = function(args)
+  --           luasnip.lsp_expand(args.body)
+  --         end
+  --       },
+  --       completion = {
+  --         autocomplete = false
+  --       },
+  --       mapping = cmp.mapping.preset.insert({
+  --         ["<Tab>"] = cmp.mapping(function(fallback)
+  --           if cmp.visible() then
+  --             cmp.select_next_item()
+  --           elseif luasnip.expand_or_jumpable() then
+  --             luasnip.expand_or_jump()
+  --           elseif has_words_before() then
+  --             cmp.complete()
+  --           else
+  --             fallback()
+  --           end
+  --         end, { "i", "s" }),
+  --         ["<s-Tab>"] = cmp.mapping(function(fallback)
+  --           if cmp.visible() then
+  --             cmp.select_prev_item()
+  --           elseif luasnip.jumpable(-1) then
+  --             luasnip.jump(-1)
+  --           else
+  --             fallback()
+  --           end
+  --         end, { "i", "s" }),
+  --         ["<c-e>"] = cmp.mapping.abort(),
+  --         ["<CR>"] = cmp.mapping.confirm({ select = true }),
+  --       }),
+  --       sources = {
+  --         { name = "nvim_lsp" },
+  --         { name = "luasnip" },
+  --       }
+  --     })
+  --   end
+  -- },
+  --
   -- Useful plugin to show you pending keybinds.
-  { 'folke/which-key.nvim', opts = {} },
+  { 'folke/which-key.nvim',  opts = {} },
   {
     -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
@@ -273,8 +353,11 @@ require('lazy').setup({
   -- NOTE: Next Step on Your Neovim Journey: Add/Configure additional "plugins" for kickstart
   --       These are some example plugins that I've included in the kickstart repository.
   --       Uncomment any of the lines below to enable them.
-  -- require 'kickstart.plugins.autoformat',
-  -- require 'kickstart.plugins.debug',
+  require 'kickstart.plugins.autoformat',
+  require 'kickstart.plugins.debug',
+
+  -- Add my own plugin file
+  require 'custom.plugins.python-dev',
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    You can use this folder to prevent any conflicts with this init.lua if you're interested in keeping
@@ -508,6 +591,9 @@ vim.defer_fn(function()
 end, 0)
 
 -- [[ Configure LSP ]]
+-- Turn off snippets
+local capabilities = require('cmp_nvim_lsp').default_capabilities()
+capabilities.textDocument.completion.completionItem.snippetSupport = false
 --  This function gets run when an LSP connects to a particular buffer.
 local on_attach = function(_, bufnr)
   -- NOTE: Remember that lua is a real programming language, and as such it is possible
@@ -588,7 +674,13 @@ require('mason-lspconfig').setup()
 local servers = {
   -- clangd = {},
   -- gopls = {},
-  -- pyright = {},
+  pyright = {
+    python = {
+      analysis = {
+        typeCheckingMode = "off"
+      }
+    }
+  },
   -- rust_analyzer = {},
   -- tsserver = {},
   -- html = { filetypes = { 'html', 'twig', 'hbs'} },
@@ -682,3 +774,6 @@ cmp.setup {
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+-- Relative linenum
+vim.wo.relativenumber = true
